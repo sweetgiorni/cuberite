@@ -2286,6 +2286,21 @@ function OnAllChunksAvailable()</pre> All return values from the callbacks are i
 				},
 				Notes = "Returns true if the specified location has any precipitation (rain or storm) (takes biomes into account, deserts are never wet).",
 			},
+			IsWeatherWetAtBlock =
+			{
+				Params =
+				{
+					{
+						Name = "Pos",
+						Type = "Vector3i",
+					},
+				},
+				Returns =
+				{
+					Type = "boolean",
+				},
+				Notes = "Returns true if the specified location has any precipitation (rain or storm), taking into account biomes and any blocks above the specified position that would block the precipitation.",
+			},
 			PrepareChunk =
 			{
 				Params =
@@ -3570,4 +3585,3 @@ World:ForEachEntity(
 		},
 	},
 }
-
