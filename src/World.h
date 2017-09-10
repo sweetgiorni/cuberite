@@ -817,6 +817,8 @@ public:
 		return (IsWeatherWet() && !IsBiomeNoDownfall(GetBiomeAt(a_BlockX, a_BlockZ)));
 	}
 
+	virtual bool IsWeatherWetAtBlock(Vector3i a_Pos);
+
 	/** Returns the seed of the world. */
 	int GetSeed(void) { return m_Generator.GetSeed(); }
 
@@ -1137,7 +1139,3 @@ private:
 	void SetChunkData(cSetChunkData & a_SetChunkData);
 
 };  // tolua_export
-
-
-
-
