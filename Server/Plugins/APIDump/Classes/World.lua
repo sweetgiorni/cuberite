@@ -2297,7 +2297,9 @@ function OnAllChunksAvailable()</pre> All return values from the callbacks are i
 				},
 				Returns =
 				{
-					Type = "boolean",
+					{
+						Type = "boolean",
+					},
 				},
 				Notes = "Returns true if the specified location has any precipitation (rain or storm), taking into account biomes and any blocks above the specified position that would block the precipitation.",
 			},
