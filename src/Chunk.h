@@ -95,7 +95,7 @@ public:
 	/** Marks all clients attached to this chunk as wanting this chunk. Also sets presence to cpQueued. */
 	void MarkRegenerating(void);
 
-	/** Returns true if the chunk has changed since it was last saved. */
+	/** Returns true iff the chunk has changed since it was last saved. */
 	bool IsDirty(void) const {return m_IsDirty; }
 
 	bool CanUnload(void);
@@ -615,3 +615,7 @@ private:
 typedef cChunk * cChunkPtr;
 
 typedef std::list<cChunkPtr> cChunkPtrList;
+
+
+
+
