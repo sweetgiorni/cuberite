@@ -557,7 +557,7 @@ bool cMonster::DoTakeDamage(TakeDamageInfo & a_TDI)
 
 	if (!m_SoundHurt.empty() && (m_Health > 0))
 	{
-		m_World->BroadcastSoundEffect(m_SoundHurt, GetPosX(), GetPosY(), GetPosZ(), 1.0f, 0.8f);
+		m_World->BroadcastSoundEffect(m_SoundHurt, GetPosition(), 1.0f, 0.8f);
 	}
 
 	if ((a_TDI.Attacker != nullptr) && a_TDI.Attacker->IsPawn())
@@ -583,7 +583,7 @@ void cMonster::KilledBy(TakeDamageInfo & a_TDI)
 	super::KilledBy(a_TDI);
 	if (m_SoundHurt != "")
 	{
-		m_World->BroadcastSoundEffect(m_SoundDeath, GetPosX(), GetPosY(), GetPosZ(), 1.0f, 0.8f);
+		m_World->BroadcastSoundEffect(m_SoundDeath, GetPosition(), 1.0f, 0.8f);
 	}
 	int Reward;
 	switch (m_MobType)
@@ -1034,10 +1034,12 @@ cMonster::eFamily cMonster::FamilyFromType(eMonsterType a_Type)
 		case mtZombie:       return mfHostile;
 		case mtZombiePigman: return mfHostile;
 
-		case mtInvalidType:  break;
+		default:
+		{
+			ASSERT(!"Unhandled mob type");
+			return mfUnhandled;
+		}
 	}
-	ASSERT(!"Unhandled mob type");
-	return mfUnhandled;
 }
 
 
@@ -1053,10 +1055,12 @@ int cMonster::GetSpawnDelay(cMonster::eFamily a_MobFamily)
 		case mfAmbient:   return 40;
 		case mfWater:     return 400;
 		case mfNoSpawn:   return -1;
-		case mfUnhandled: break;
+		default:
+		{
+			ASSERT(!"Unhandled mob family");
+			return -1;
+		}
 	}
-	ASSERT(!"Unhandled mob family");
-	return -1;
 }
 
 

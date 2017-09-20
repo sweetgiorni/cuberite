@@ -443,7 +443,7 @@ void cChunk::WriteBlockArea(cBlockArea & a_Area, int a_MinBlockX, int a_MinBlock
 			{
 				int ChunkX = OffX + x;
 				int AreaX = BaseX + x;
-				int idx = a_Area.MakeIndex(AreaX, AreaY, AreaZ);
+				auto idx = a_Area.MakeIndex(AreaX, AreaY, AreaZ);
 				BLOCKTYPE BlockType = AreaBlockTypes[idx];
 				NIBBLETYPE BlockMeta = AreaBlockMetas[idx];
 				FastSetBlock(ChunkX, ChunkY, ChunkZ, BlockType, BlockMeta);
@@ -2114,17 +2114,12 @@ bool cChunk::HasEntity(UInt32 a_EntityID)
 
 
 
-bool cChunk::ForEachEntity(cEntityCallback & a_Callback)
+bool cChunk::ForEachEntity(cEntityCallback a_Callback)
 {
 	// The entity list is locked by the parent chunkmap's CS
-	for (auto itr = m_Entities.begin(), itr2 = itr; itr != m_Entities.end(); itr = itr2)
+	for (const auto & Entity : m_Entities)
 	{
-		++itr2;
-		if (!(*itr)->IsTicking())
-		{
-			continue;
-		}
-		if (a_Callback.Item(itr->get()))
+		if (Entity->IsTicking() && a_Callback(*Entity))
 		{
 			return false;
 		}
@@ -2136,23 +2131,22 @@ bool cChunk::ForEachEntity(cEntityCallback & a_Callback)
 
 
 
-bool cChunk::ForEachEntityInBox(const cBoundingBox & a_Box, cEntityCallback & a_Callback)
+bool cChunk::ForEachEntityInBox(const cBoundingBox & a_Box, cEntityCallback a_Callback)
 {
 	// The entity list is locked by the parent chunkmap's CS
-	for (auto itr = m_Entities.begin(), itr2 = itr; itr != m_Entities.end(); itr = itr2)
+	for (const auto & Entity : m_Entities)
 	{
-		++itr2;
-		if (!(*itr)->IsTicking())
+		if (!Entity->IsTicking())
 		{
 			continue;
 		}
-		cBoundingBox EntBox((*itr)->GetPosition(), (*itr)->GetWidth() / 2, (*itr)->GetHeight());
+		cBoundingBox EntBox(Entity->GetPosition(), Entity->GetWidth() / 2, Entity->GetHeight());
 		if (!EntBox.DoesIntersect(a_Box))
 		{
 			// The entity is not in the specified box
 			continue;
 		}
-		if (a_Callback.Item(itr->get()))
+		if (a_Callback(*Entity))
 		{
 			return false;
 		}
@@ -2164,23 +2158,14 @@ bool cChunk::ForEachEntityInBox(const cBoundingBox & a_Box, cEntityCallback & a_
 
 
 
-bool cChunk::DoWithEntityByID(UInt32 a_EntityID, cEntityCallback & a_Callback, bool & a_CallbackResult)
-{
-	return DoWithEntityByID(a_EntityID, std::bind(&cEntityCallback::Item, &a_Callback, std::placeholders::_1), a_CallbackResult);
-}
-
-
-
-
-
-bool cChunk::DoWithEntityByID(UInt32 a_EntityID, cLambdaEntityCallback a_Callback, bool & a_CallbackResult)
+bool cChunk::DoWithEntityByID(UInt32 a_EntityID, cEntityCallback a_Callback, bool & a_CallbackResult)
 {
 	// The entity list is locked by the parent chunkmap's CS
 	for (const auto & Entity : m_Entities)
 	{
 		if ((Entity->GetUniqueID() == a_EntityID) && (Entity->IsTicking()))
 		{
-			a_CallbackResult = a_Callback(Entity.get());
+			a_CallbackResult = a_Callback(*Entity);
 			return true;
 		}
 	}  // for itr - m_Entitites[]
@@ -2192,7 +2177,7 @@ bool cChunk::DoWithEntityByID(UInt32 a_EntityID, cLambdaEntityCallback a_Callbac
 
 
 template <class tyEntity, BLOCKTYPE... tBlocktype>
-bool cChunk::GenericForEachBlockEntity(cItemCallback<tyEntity>& a_Callback)
+bool cChunk::GenericForEachBlockEntity(cFunctionRef<bool(tyEntity &)> a_Callback)
 {
 	// The blockentity list is locked by the parent chunkmap's CS
 	for (auto & KeyPair : m_BlockEntities)
@@ -2203,7 +2188,7 @@ bool cChunk::GenericForEachBlockEntity(cItemCallback<tyEntity>& a_Callback)
 			(IsOneOf<tBlocktype...>(Block->GetBlockType()))
 		)
 		{
-			if (a_Callback.Item(static_cast<tyEntity *>(Block)))
+			if (a_Callback(*static_cast<tyEntity *>(Block)))
 			{
 				return false;
 			}
@@ -2216,7 +2201,7 @@ bool cChunk::GenericForEachBlockEntity(cItemCallback<tyEntity>& a_Callback)
 
 
 
-bool cChunk::ForEachBlockEntity(cBlockEntityCallback & a_Callback)
+bool cChunk::ForEachBlockEntity(cBlockEntityCallback a_Callback)
 {
 	return GenericForEachBlockEntity<cBlockEntity>(a_Callback);
 }
@@ -2225,7 +2210,7 @@ bool cChunk::ForEachBlockEntity(cBlockEntityCallback & a_Callback)
 
 
 
-bool cChunk::ForEachBrewingstand(cBrewingstandCallback & a_Callback)
+bool cChunk::ForEachBrewingstand(cBrewingstandCallback a_Callback)
 {
 	return GenericForEachBlockEntity<cBrewingstandEntity,
 		E_BLOCK_BREWING_STAND
@@ -2236,7 +2221,7 @@ bool cChunk::ForEachBrewingstand(cBrewingstandCallback & a_Callback)
 
 
 
-bool cChunk::ForEachChest(cChestCallback & a_Callback)
+bool cChunk::ForEachChest(cChestCallback a_Callback)
 {
 	return GenericForEachBlockEntity<cChestEntity,
 		E_BLOCK_CHEST
@@ -2247,7 +2232,7 @@ bool cChunk::ForEachChest(cChestCallback & a_Callback)
 
 
 
-bool cChunk::ForEachDispenser(cDispenserCallback & a_Callback)
+bool cChunk::ForEachDispenser(cDispenserCallback a_Callback)
 {
 	return GenericForEachBlockEntity<cDispenserEntity,
 		E_BLOCK_DISPENSER
@@ -2258,7 +2243,7 @@ bool cChunk::ForEachDispenser(cDispenserCallback & a_Callback)
 
 
 
-bool cChunk::ForEachDropper(cDropperCallback & a_Callback)
+bool cChunk::ForEachDropper(cDropperCallback a_Callback)
 {
 	return GenericForEachBlockEntity<cDropperEntity,
 		E_BLOCK_DROPPER
@@ -2269,7 +2254,7 @@ bool cChunk::ForEachDropper(cDropperCallback & a_Callback)
 
 
 
-bool cChunk::ForEachDropSpenser(cDropSpenserCallback & a_Callback)
+bool cChunk::ForEachDropSpenser(cDropSpenserCallback a_Callback)
 {
 	return GenericForEachBlockEntity<cDropSpenserEntity,
 		E_BLOCK_DISPENSER,
@@ -2281,7 +2266,7 @@ bool cChunk::ForEachDropSpenser(cDropSpenserCallback & a_Callback)
 
 
 
-bool cChunk::ForEachFurnace(cFurnaceCallback & a_Callback)
+bool cChunk::ForEachFurnace(cFurnaceCallback a_Callback)
 {
 	return GenericForEachBlockEntity<cFurnaceEntity,
 		E_BLOCK_FURNACE,
@@ -2294,7 +2279,7 @@ bool cChunk::ForEachFurnace(cFurnaceCallback & a_Callback)
 
 
 template <class tyEntity, BLOCKTYPE... tBlocktype>
-bool cChunk::GenericDoWithBlockEntityAt(int a_BlockX, int a_BlockY, int a_BlockZ, cItemCallback<tyEntity>& a_Callback)
+bool cChunk::GenericDoWithBlockEntityAt(int a_BlockX, int a_BlockY, int a_BlockZ, cFunctionRef<bool(tyEntity &)> a_Callback)
 {
 	// The blockentity list is locked by the parent chunkmap's CS
 	cBlockEntity * Block = GetBlockEntity(a_BlockX, a_BlockY, a_BlockZ);
@@ -2309,14 +2294,14 @@ bool cChunk::GenericDoWithBlockEntityAt(int a_BlockX, int a_BlockY, int a_BlockZ
 	{
 		return false;  // Not any of the given tBlocktypes
 	}
-	return !a_Callback.Item(static_cast<tyEntity *>(Block));
+	return !a_Callback(*static_cast<tyEntity *>(Block));
 }
 
 
 
 
 
-bool cChunk::DoWithBlockEntityAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBlockEntityCallback & a_Callback)
+bool cChunk::DoWithBlockEntityAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBlockEntityCallback a_Callback)
 {
 	return GenericDoWithBlockEntityAt<cBlockEntity>(a_BlockX, a_BlockY, a_BlockZ, a_Callback);
 }
@@ -2324,7 +2309,7 @@ bool cChunk::DoWithBlockEntityAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBloc
 
 
 
-bool cChunk::DoWithBeaconAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBeaconCallback & a_Callback)
+bool cChunk::DoWithBeaconAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBeaconCallback a_Callback)
 {
 	return GenericDoWithBlockEntityAt<cBeaconEntity,
 		E_BLOCK_BEACON
@@ -2334,7 +2319,7 @@ bool cChunk::DoWithBeaconAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBeaconCal
 
 
 
-bool cChunk::DoWithBedAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBedCallback & a_Callback)
+bool cChunk::DoWithBedAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBedCallback a_Callback)
 {
 	return GenericDoWithBlockEntityAt<cBedEntity,
 		E_BLOCK_BED
@@ -2344,7 +2329,7 @@ bool cChunk::DoWithBedAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBedCallback 
 
 
 
-bool cChunk::DoWithBrewingstandAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBrewingstandCallback & a_Callback)
+bool cChunk::DoWithBrewingstandAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBrewingstandCallback a_Callback)
 {
 	return GenericDoWithBlockEntityAt<cBrewingstandEntity,
 		E_BLOCK_BREWING_STAND
@@ -2355,7 +2340,7 @@ bool cChunk::DoWithBrewingstandAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBre
 
 
 
-bool cChunk::DoWithChestAt(int a_BlockX, int a_BlockY, int a_BlockZ, cChestCallback & a_Callback)
+bool cChunk::DoWithChestAt(int a_BlockX, int a_BlockY, int a_BlockZ, cChestCallback a_Callback)
 {
 	return GenericDoWithBlockEntityAt<cChestEntity,
 		E_BLOCK_CHEST,
@@ -2367,7 +2352,7 @@ bool cChunk::DoWithChestAt(int a_BlockX, int a_BlockY, int a_BlockZ, cChestCallb
 
 
 
-bool cChunk::DoWithDispenserAt(int a_BlockX, int a_BlockY, int a_BlockZ, cDispenserCallback & a_Callback)
+bool cChunk::DoWithDispenserAt(int a_BlockX, int a_BlockY, int a_BlockZ, cDispenserCallback a_Callback)
 {
 	return GenericDoWithBlockEntityAt<cDispenserEntity,
 		E_BLOCK_DISPENSER
@@ -2378,7 +2363,7 @@ bool cChunk::DoWithDispenserAt(int a_BlockX, int a_BlockY, int a_BlockZ, cDispen
 
 
 
-bool cChunk::DoWithDropperAt(int a_BlockX, int a_BlockY, int a_BlockZ, cDropperCallback & a_Callback)
+bool cChunk::DoWithDropperAt(int a_BlockX, int a_BlockY, int a_BlockZ, cDropperCallback a_Callback)
 {
 	return GenericDoWithBlockEntityAt<cDropperEntity,
 		E_BLOCK_DROPPER
@@ -2389,7 +2374,7 @@ bool cChunk::DoWithDropperAt(int a_BlockX, int a_BlockY, int a_BlockZ, cDropperC
 
 
 
-bool cChunk::DoWithDropSpenserAt(int a_BlockX, int a_BlockY, int a_BlockZ, cDropSpenserCallback & a_Callback)
+bool cChunk::DoWithDropSpenserAt(int a_BlockX, int a_BlockY, int a_BlockZ, cDropSpenserCallback a_Callback)
 {
 	return GenericDoWithBlockEntityAt<cDropSpenserEntity,
 		E_BLOCK_DISPENSER,
@@ -2401,7 +2386,7 @@ bool cChunk::DoWithDropSpenserAt(int a_BlockX, int a_BlockY, int a_BlockZ, cDrop
 
 
 
-bool cChunk::DoWithFurnaceAt(int a_BlockX, int a_BlockY, int a_BlockZ, cFurnaceCallback & a_Callback)
+bool cChunk::DoWithFurnaceAt(int a_BlockX, int a_BlockY, int a_BlockZ, cFurnaceCallback a_Callback)
 {
 	return GenericDoWithBlockEntityAt<cFurnaceEntity,
 		E_BLOCK_FURNACE,
@@ -2413,7 +2398,7 @@ bool cChunk::DoWithFurnaceAt(int a_BlockX, int a_BlockY, int a_BlockZ, cFurnaceC
 
 
 
-bool cChunk::DoWithNoteBlockAt(int a_BlockX, int a_BlockY, int a_BlockZ, cNoteBlockCallback & a_Callback)
+bool cChunk::DoWithNoteBlockAt(int a_BlockX, int a_BlockY, int a_BlockZ, cNoteBlockCallback a_Callback)
 {
 	return GenericDoWithBlockEntityAt<cNoteEntity,
 		E_BLOCK_NOTE_BLOCK
@@ -2424,7 +2409,7 @@ bool cChunk::DoWithNoteBlockAt(int a_BlockX, int a_BlockY, int a_BlockZ, cNoteBl
 
 
 
-bool cChunk::DoWithCommandBlockAt(int a_BlockX, int a_BlockY, int a_BlockZ, cCommandBlockCallback & a_Callback)
+bool cChunk::DoWithCommandBlockAt(int a_BlockX, int a_BlockY, int a_BlockZ, cCommandBlockCallback a_Callback)
 {
 	return GenericDoWithBlockEntityAt<cCommandBlockEntity,
 		E_BLOCK_COMMAND_BLOCK
@@ -2435,7 +2420,7 @@ bool cChunk::DoWithCommandBlockAt(int a_BlockX, int a_BlockY, int a_BlockZ, cCom
 
 
 
-bool cChunk::DoWithMobHeadAt(int a_BlockX, int a_BlockY, int a_BlockZ, cMobHeadCallback & a_Callback)
+bool cChunk::DoWithMobHeadAt(int a_BlockX, int a_BlockY, int a_BlockZ, cMobHeadCallback a_Callback)
 {
 	return GenericDoWithBlockEntityAt<cMobHeadEntity,
 		E_BLOCK_HEAD
@@ -2446,7 +2431,7 @@ bool cChunk::DoWithMobHeadAt(int a_BlockX, int a_BlockY, int a_BlockZ, cMobHeadC
 
 
 
-bool cChunk::DoWithFlowerPotAt(int a_BlockX, int a_BlockY, int a_BlockZ, cFlowerPotCallback & a_Callback)
+bool cChunk::DoWithFlowerPotAt(int a_BlockX, int a_BlockY, int a_BlockZ, cFlowerPotCallback a_Callback)
 {
 	return GenericDoWithBlockEntityAt<cFlowerPotEntity,
 		E_BLOCK_FLOWER_POT
@@ -2712,7 +2697,7 @@ void cChunk::BroadcastUnleashEntity(const cEntity & a_Entity)
 
 
 
-void cChunk::BroadcastBlockAction(int a_BlockX, int a_BlockY, int a_BlockZ, char a_Byte1, char a_Byte2, BLOCKTYPE a_BlockType, const cClientHandle * a_Exclude)
+void cChunk::BroadcastBlockAction(Vector3i a_BlockPos, char a_Byte1, char a_Byte2, BLOCKTYPE a_BlockType, const cClientHandle * a_Exclude)
 {
 	for (auto itr = m_LoadedByClient.begin(); itr != m_LoadedByClient.end(); ++itr)
 	{
@@ -2720,7 +2705,7 @@ void cChunk::BroadcastBlockAction(int a_BlockX, int a_BlockY, int a_BlockZ, char
 		{
 			continue;
 		}
-		(*itr)->SendBlockAction(a_BlockX, a_BlockY, a_BlockZ, a_Byte1, a_Byte2, a_BlockType);
+		(*itr)->SendBlockAction(a_BlockPos.x, a_BlockPos.y, a_BlockPos.z, a_Byte1, a_Byte2, a_BlockType);
 	}  // for itr - LoadedByClient[]
 }
 
@@ -3002,7 +2987,7 @@ void cChunk::BroadcastRemoveEntityEffect(const cEntity & a_Entity, int a_EffectI
 
 
 
-void cChunk::BroadcastSoundEffect(const AString & a_SoundName, double a_X, double a_Y, double a_Z, float a_Volume, float a_Pitch, const cClientHandle * a_Exclude)
+void cChunk::BroadcastSoundEffect(const AString & a_SoundName, Vector3d a_Position, float a_Volume, float a_Pitch, const cClientHandle * a_Exclude)
 {
 	for (auto itr = m_LoadedByClient.begin(); itr != m_LoadedByClient.end(); ++itr)
 	{
@@ -3010,7 +2995,7 @@ void cChunk::BroadcastSoundEffect(const AString & a_SoundName, double a_X, doubl
 		{
 			continue;
 		}
-		(*itr)->SendSoundEffect(a_SoundName, a_X, a_Y, a_Z, a_Volume, a_Pitch);
+		(*itr)->SendSoundEffect(a_SoundName, a_Position, a_Volume, a_Pitch);
 	}  // for itr - LoadedByClient[]
 }
 
@@ -3050,7 +3035,7 @@ void cChunk::BroadcastSpawnEntity(cEntity & a_Entity, const cClientHandle * a_Ex
 
 
 
-void cChunk::BroadcastThunderbolt(int a_BlockX, int a_BlockY, int a_BlockZ, const cClientHandle * a_Exclude)
+void cChunk::BroadcastThunderbolt(Vector3i a_BlockPos, const cClientHandle * a_Exclude)
 {
 	for (auto itr = m_LoadedByClient.begin(); itr != m_LoadedByClient.end(); ++itr)
 	{
@@ -3058,7 +3043,7 @@ void cChunk::BroadcastThunderbolt(int a_BlockX, int a_BlockY, int a_BlockZ, cons
 		{
 			continue;
 		}
-		(*itr)->SendThunderbolt(a_BlockX, a_BlockY, a_BlockZ);
+		(*itr)->SendThunderbolt(a_BlockPos.x, a_BlockPos.y, a_BlockPos.z);
 	}  // for itr - LoadedByClient[]
 }
 

@@ -1,4 +1,4 @@
-﻿
+
 // X509Cert.h
 
 // Declares the cX509Cert class representing a wrapper over X509 certs in mbedTLS
@@ -24,6 +24,7 @@ public:
 	~cX509Cert(void);
 
 	/** Parses the certificate chain data into the context.
+	The certificate can be DER- or PEM-encoded.
 	Returns 0 on succes, or mbedTLS error code on failure. */
 	int Parse(const void * a_CertContents, size_t a_Size);
 

@@ -81,21 +81,16 @@ void cCreeper::GetDrops(cItems & a_Drops, cEntity * a_Killer)
 		a_Killer->IsProjectile() &&
 		((reinterpret_cast<cProjectileEntity *>(a_Killer))->GetCreatorUniqueID() != cEntity::INVALID_ID))
 	{
-		class cProjectileCreatorCallback : public cEntityCallback
-		{
-		public:
-			cProjectileCreatorCallback(void) {}
-
-			virtual bool Item(cEntity * a_Entity) override
+		auto ProjectileCreatorCallback = [](cEntity & a_Entity)
 			{
-				if (a_Entity->IsMob() && ((reinterpret_cast<cMonster *>(a_Entity))->GetMobType() == mtSkeleton))
+				if (a_Entity.IsMob() && ((static_cast<cMonster &>(a_Entity)).GetMobType() == mtSkeleton))
 				{
 					return true;
 				}
 				return false;
-			}
-		} PCC;
-		if (GetWorld()->DoWithEntityByID((reinterpret_cast<cProjectileEntity *>(a_Killer))->GetCreatorUniqueID(), PCC))
+			};
+
+		if (GetWorld()->DoWithEntityByID(static_cast<cProjectileEntity *>(a_Killer)->GetCreatorUniqueID(), ProjectileCreatorCallback))
 		{
 			AddRandomDropItem(a_Drops, 1, 1, static_cast<short>(m_World->GetTickRandomNumber(11) + E_ITEM_FIRST_DISC));
 		}
@@ -132,7 +127,7 @@ bool cCreeper::Attack(std::chrono::milliseconds a_Dt)
 
 	if (!m_bIsBlowing)
 	{
-		m_World->BroadcastSoundEffect("entity.creeper.primed", GetPosX(), GetPosY(), GetPosZ(), 1.f, (0.75f + (static_cast<float>((GetUniqueID() * 23) % 32)) / 64));
+		m_World->BroadcastSoundEffect("entity.creeper.primed", GetPosition(), 1.f, (0.75f + (static_cast<float>((GetUniqueID() * 23) % 32)) / 64));
 		m_bIsBlowing = true;
 		m_World->BroadcastEntityMetadata(*this);
 
@@ -155,7 +150,7 @@ void cCreeper::OnRightClicked(cPlayer & a_Player)
 		{
 			a_Player.UseEquippedItem();
 		}
-		m_World->BroadcastSoundEffect("entity.creeper.primed", GetPosX(), GetPosY(), GetPosZ(), 1.f, (0.75f + (static_cast<float>((GetUniqueID() * 23) % 32)) / 64));
+		m_World->BroadcastSoundEffect("entity.creeper.primed", GetPosition(), 1.f, (0.75f + (static_cast<float>((GetUniqueID() * 23) % 32)) / 64));
 		m_bIsBlowing = true;
 		m_World->BroadcastEntityMetadata(*this);
 		m_BurnedWithFlintAndSteel = true;

@@ -233,10 +233,20 @@ cWorld::~cWorld()
 
 
 
-void cWorld::CastThunderbolt (int a_BlockX, int a_BlockY, int a_BlockZ)
+void cWorld::CastThunderbolt(int a_BlockX, int a_BlockY, int a_BlockZ)
 {
-	BroadcastThunderbolt(a_BlockX, a_BlockY, a_BlockZ);
-	BroadcastSoundEffect("entity.lightning.thunder", a_BlockX, a_BlockY, a_BlockZ, 50, 1);
+	LOG("CastThunderbolt(int, int, int) is deprecated, use CastThunderbolt(Vector3i) instead");
+	CastThunderbolt({a_BlockX, a_BlockY, a_BlockZ});
+}
+
+
+
+
+
+void cWorld::CastThunderbolt(Vector3i a_Block)
+{
+	BroadcastThunderbolt(a_Block);
+	BroadcastSoundEffect("entity.lightning.thunder", a_Block, 50, 1);
 }
 
 
@@ -1102,7 +1112,7 @@ void cWorld::TickWeather(float a_Dt)
 		// 0.5% chance per tick of thunderbolt
 		if (GetRandomProvider().RandBool(0.005))
 		{
-			CastThunderbolt(0, 0, 0);  // TODO: find random positions near players to cast thunderbolts.
+			CastThunderbolt({0, 0, 0});  // TODO: find random positions near players to cast thunderbolts.
 		}
 	}
 }
@@ -1146,59 +1156,52 @@ void cWorld::TickMobs(std::chrono::milliseconds a_Dt)
 			{
 				m_ChunkMap->SpawnMobs(Spawner);
 				// do the spawn
-				for (cMobSpawner::tSpawnedContainer::const_iterator itr2 = Spawner.getSpawned().begin(); itr2 != Spawner.getSpawned().end(); ++itr2)
+				for (auto & Mob : Spawner.getSpawned())
 				{
-					SpawnMobFinalize(std::move(const_cast<std::unique_ptr<cMonster> &>(*itr2)));
+					SpawnMobFinalize(std::move(Mob));
 				}
 			}
 		}  // for i - AllFamilies[]
 	}  // if (Spawning enabled)
 
-	class cCallback : public cEntityCallback
-	{
-		virtual bool Item(cEntity * a_Entity) override
+	ForEachEntity([=](cEntity & a_Entity)
 		{
-			if (!a_Entity->IsMob())
+			if (!a_Entity.IsMob())
 			{
 				return false;
 			}
-			if (!a_Entity->IsTicking())
+			if (!a_Entity.IsTicking())
 			{
 				return false;
 			}
 
-			auto Monster = static_cast<cMonster *>(a_Entity);
-			ASSERT(Monster->GetParentChunk() != nullptr);  // A ticking entity must have a valid parent chunk
+			auto & Monster = static_cast<cMonster &>(a_Entity);
+			ASSERT(Monster.GetParentChunk() != nullptr);  // A ticking entity must have a valid parent chunk
 
 			// Tick close mobs
-			if (Monster->GetParentChunk()->HasAnyClients())
+			if (Monster.GetParentChunk()->HasAnyClients())
 			{
-				Monster->Tick(m_Dt, *(a_Entity->GetParentChunk()));
+				Monster.Tick(a_Dt, *(a_Entity.GetParentChunk()));
 			}
 			// Destroy far hostile mobs except if last target was a player
-			else if ((Monster->GetMobFamily() == cMonster::eFamily::mfHostile) && !Monster->WasLastTargetAPlayer())
+			else if ((Monster.GetMobFamily() == cMonster::eFamily::mfHostile) && !Monster.WasLastTargetAPlayer())
 			{
-				if (Monster->GetMobType() != eMonsterType::mtWolf)
+				if (Monster.GetMobType() != eMonsterType::mtWolf)
 				{
-					Monster->Destroy(true);
+					Monster.Destroy(true);
 				}
 				else
 				{
-					auto Wolf = static_cast<cWolf *>(Monster);
-					if (Wolf->IsAngry())
+					auto & Wolf = static_cast<cWolf &>(Monster);
+					if (Wolf.IsAngry())
 					{
-						Monster->Destroy(true);
+						Monster.Destroy(true);
 					}
 				}
 			}
 			return false;
 		}
-	public:
-		std::chrono::milliseconds m_Dt;
-	} Callback;
-
-	Callback.m_Dt = a_Dt;
-	ForEachEntity(Callback);
+	);
 }
 
 
@@ -1350,7 +1353,7 @@ void cWorld::WakeUpSimulatorsInArea(const cCuboid & a_Area)
 
 
 
-bool cWorld::ForEachBlockEntityInChunk(int a_ChunkX, int a_ChunkZ, cBlockEntityCallback & a_Callback)
+bool cWorld::ForEachBlockEntityInChunk(int a_ChunkX, int a_ChunkZ, cBlockEntityCallback a_Callback)
 {
 	return m_ChunkMap->ForEachBlockEntityInChunk(a_ChunkX, a_ChunkZ, a_Callback);
 }
@@ -1359,7 +1362,7 @@ bool cWorld::ForEachBlockEntityInChunk(int a_ChunkX, int a_ChunkZ, cBlockEntityC
 
 
 
-bool cWorld::ForEachBrewingstandInChunk(int a_ChunkX, int a_ChunkZ, cBrewingstandCallback & a_Callback)
+bool cWorld::ForEachBrewingstandInChunk(int a_ChunkX, int a_ChunkZ, cBrewingstandCallback a_Callback)
 {
 	return m_ChunkMap->ForEachBrewingstandInChunk(a_ChunkX, a_ChunkZ, a_Callback);
 }
@@ -1368,7 +1371,7 @@ bool cWorld::ForEachBrewingstandInChunk(int a_ChunkX, int a_ChunkZ, cBrewingstan
 
 
 
-bool cWorld::ForEachChestInChunk(int a_ChunkX, int a_ChunkZ, cChestCallback & a_Callback)
+bool cWorld::ForEachChestInChunk(int a_ChunkX, int a_ChunkZ, cChestCallback a_Callback)
 {
 	return m_ChunkMap->ForEachChestInChunk(a_ChunkX, a_ChunkZ, a_Callback);
 }
@@ -1377,7 +1380,7 @@ bool cWorld::ForEachChestInChunk(int a_ChunkX, int a_ChunkZ, cChestCallback & a_
 
 
 
-bool cWorld::ForEachDispenserInChunk(int a_ChunkX, int a_ChunkZ, cDispenserCallback & a_Callback)
+bool cWorld::ForEachDispenserInChunk(int a_ChunkX, int a_ChunkZ, cDispenserCallback a_Callback)
 {
 	return m_ChunkMap->ForEachDispenserInChunk(a_ChunkX, a_ChunkZ, a_Callback);
 }
@@ -1386,7 +1389,7 @@ bool cWorld::ForEachDispenserInChunk(int a_ChunkX, int a_ChunkZ, cDispenserCallb
 
 
 
-bool cWorld::ForEachDropperInChunk(int a_ChunkX, int a_ChunkZ, cDropperCallback & a_Callback)
+bool cWorld::ForEachDropperInChunk(int a_ChunkX, int a_ChunkZ, cDropperCallback a_Callback)
 {
 	return m_ChunkMap->ForEachDropperInChunk(a_ChunkX, a_ChunkZ, a_Callback);
 }
@@ -1395,7 +1398,7 @@ bool cWorld::ForEachDropperInChunk(int a_ChunkX, int a_ChunkZ, cDropperCallback 
 
 
 
-bool cWorld::ForEachDropSpenserInChunk(int a_ChunkX, int a_ChunkZ, cDropSpenserCallback & a_Callback)
+bool cWorld::ForEachDropSpenserInChunk(int a_ChunkX, int a_ChunkZ, cDropSpenserCallback a_Callback)
 {
 	return m_ChunkMap->ForEachDropSpenserInChunk(a_ChunkX, a_ChunkZ, a_Callback);
 }
@@ -1404,7 +1407,7 @@ bool cWorld::ForEachDropSpenserInChunk(int a_ChunkX, int a_ChunkZ, cDropSpenserC
 
 
 
-bool cWorld::ForEachFurnaceInChunk(int a_ChunkX, int a_ChunkZ, cFurnaceCallback & a_Callback)
+bool cWorld::ForEachFurnaceInChunk(int a_ChunkX, int a_ChunkZ, cFurnaceCallback a_Callback)
 {
 	return m_ChunkMap->ForEachFurnaceInChunk(a_ChunkX, a_ChunkZ, a_Callback);
 }
@@ -1424,7 +1427,7 @@ void cWorld::DoExplosionAt(double a_ExplosionSize, double a_BlockX, double a_Blo
 	Vector3d explosion_pos = Vector3d(a_BlockX, a_BlockY, a_BlockZ);
 	cVector3iArray BlocksAffected;
 	m_ChunkMap->DoExplosionAt(a_ExplosionSize, a_BlockX, a_BlockY, a_BlockZ, BlocksAffected);
-	BroadcastSoundEffect("entity.generic.explode", static_cast<double>(a_BlockX), static_cast<double>(a_BlockY), static_cast<double>(a_BlockZ), 1.0f, 0.6f);
+	BroadcastSoundEffect("entity.generic.explode", Vector3d(a_BlockX, a_BlockY, a_BlockZ), 1.0f, 0.6f);
 
 	{
 		cCSLock Lock(m_CSPlayers);
@@ -1459,7 +1462,7 @@ void cWorld::DoExplosionAt(double a_ExplosionSize, double a_BlockX, double a_Blo
 
 
 
-bool cWorld::DoWithBlockEntityAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBlockEntityCallback & a_Callback)
+bool cWorld::DoWithBlockEntityAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBlockEntityCallback a_Callback)
 {
 	return m_ChunkMap->DoWithBlockEntityAt(a_BlockX, a_BlockY, a_BlockZ, a_Callback);
 }
@@ -1468,7 +1471,7 @@ bool cWorld::DoWithBlockEntityAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBloc
 
 
 
-bool cWorld::DoWithBeaconAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBeaconCallback & a_Callback)
+bool cWorld::DoWithBeaconAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBeaconCallback a_Callback)
 {
 	return m_ChunkMap->DoWithBeaconAt(a_BlockX, a_BlockY, a_BlockZ, a_Callback);
 }
@@ -1477,7 +1480,7 @@ bool cWorld::DoWithBeaconAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBeaconCal
 
 
 
-bool cWorld::DoWithBedAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBedCallback & a_Callback)
+bool cWorld::DoWithBedAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBedCallback a_Callback)
 {
 	return m_ChunkMap->DoWithBedAt(a_BlockX, a_BlockY, a_BlockZ, a_Callback);
 }
@@ -1486,7 +1489,7 @@ bool cWorld::DoWithBedAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBedCallback 
 
 
 
-bool cWorld::DoWithBrewingstandAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBrewingstandCallback & a_Callback)
+bool cWorld::DoWithBrewingstandAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBrewingstandCallback a_Callback)
 {
 	return m_ChunkMap->DoWithBrewingstandAt(a_BlockX, a_BlockY, a_BlockZ, a_Callback);
 }
@@ -1495,7 +1498,7 @@ bool cWorld::DoWithBrewingstandAt(int a_BlockX, int a_BlockY, int a_BlockZ, cBre
 
 
 
-bool cWorld::DoWithChestAt(int a_BlockX, int a_BlockY, int a_BlockZ, cChestCallback & a_Callback)
+bool cWorld::DoWithChestAt(int a_BlockX, int a_BlockY, int a_BlockZ, cChestCallback a_Callback)
 {
 	return m_ChunkMap->DoWithChestAt(a_BlockX, a_BlockY, a_BlockZ, a_Callback);
 }
@@ -1504,7 +1507,7 @@ bool cWorld::DoWithChestAt(int a_BlockX, int a_BlockY, int a_BlockZ, cChestCallb
 
 
 
-bool cWorld::DoWithDispenserAt(int a_BlockX, int a_BlockY, int a_BlockZ, cDispenserCallback & a_Callback)
+bool cWorld::DoWithDispenserAt(int a_BlockX, int a_BlockY, int a_BlockZ, cDispenserCallback a_Callback)
 {
 	return m_ChunkMap->DoWithDispenserAt(a_BlockX, a_BlockY, a_BlockZ, a_Callback);
 }
@@ -1513,7 +1516,7 @@ bool cWorld::DoWithDispenserAt(int a_BlockX, int a_BlockY, int a_BlockZ, cDispen
 
 
 
-bool cWorld::DoWithDropperAt(int a_BlockX, int a_BlockY, int a_BlockZ, cDropperCallback & a_Callback)
+bool cWorld::DoWithDropperAt(int a_BlockX, int a_BlockY, int a_BlockZ, cDropperCallback a_Callback)
 {
 	return m_ChunkMap->DoWithDropperAt(a_BlockX, a_BlockY, a_BlockZ, a_Callback);
 }
@@ -1522,7 +1525,7 @@ bool cWorld::DoWithDropperAt(int a_BlockX, int a_BlockY, int a_BlockZ, cDropperC
 
 
 
-bool cWorld::DoWithDropSpenserAt(int a_BlockX, int a_BlockY, int a_BlockZ, cDropSpenserCallback & a_Callback)
+bool cWorld::DoWithDropSpenserAt(int a_BlockX, int a_BlockY, int a_BlockZ, cDropSpenserCallback a_Callback)
 {
 	return m_ChunkMap->DoWithDropSpenserAt(a_BlockX, a_BlockY, a_BlockZ, a_Callback);
 }
@@ -1531,7 +1534,7 @@ bool cWorld::DoWithDropSpenserAt(int a_BlockX, int a_BlockY, int a_BlockZ, cDrop
 
 
 
-bool cWorld::DoWithFurnaceAt(int a_BlockX, int a_BlockY, int a_BlockZ, cFurnaceCallback & a_Callback)
+bool cWorld::DoWithFurnaceAt(int a_BlockX, int a_BlockY, int a_BlockZ, cFurnaceCallback a_Callback)
 {
 	return m_ChunkMap->DoWithFurnaceAt(a_BlockX, a_BlockY, a_BlockZ, a_Callback);
 }
@@ -1540,7 +1543,7 @@ bool cWorld::DoWithFurnaceAt(int a_BlockX, int a_BlockY, int a_BlockZ, cFurnaceC
 
 
 
-bool cWorld::DoWithNoteBlockAt(int a_BlockX, int a_BlockY, int a_BlockZ, cNoteBlockCallback & a_Callback)
+bool cWorld::DoWithNoteBlockAt(int a_BlockX, int a_BlockY, int a_BlockZ, cNoteBlockCallback a_Callback)
 {
 	return m_ChunkMap->DoWithNoteBlockAt(a_BlockX, a_BlockY, a_BlockZ, a_Callback);
 }
@@ -1549,7 +1552,7 @@ bool cWorld::DoWithNoteBlockAt(int a_BlockX, int a_BlockY, int a_BlockZ, cNoteBl
 
 
 
-bool cWorld::DoWithCommandBlockAt(int a_BlockX, int a_BlockY, int a_BlockZ, cCommandBlockCallback & a_Callback)
+bool cWorld::DoWithCommandBlockAt(int a_BlockX, int a_BlockY, int a_BlockZ, cCommandBlockCallback a_Callback)
 {
 	return m_ChunkMap->DoWithCommandBlockAt(a_BlockX, a_BlockY, a_BlockZ, a_Callback);
 }
@@ -1558,7 +1561,7 @@ bool cWorld::DoWithCommandBlockAt(int a_BlockX, int a_BlockY, int a_BlockZ, cCom
 
 
 
-bool cWorld::DoWithMobHeadAt(int a_BlockX, int a_BlockY, int a_BlockZ, cMobHeadCallback & a_Callback)
+bool cWorld::DoWithMobHeadAt(int a_BlockX, int a_BlockY, int a_BlockZ, cMobHeadCallback a_Callback)
 {
 	return m_ChunkMap->DoWithMobHeadAt(a_BlockX, a_BlockY, a_BlockZ, a_Callback);
 }
@@ -1567,7 +1570,7 @@ bool cWorld::DoWithMobHeadAt(int a_BlockX, int a_BlockY, int a_BlockZ, cMobHeadC
 
 
 
-bool cWorld::DoWithFlowerPotAt(int a_BlockX, int a_BlockY, int a_BlockZ, cFlowerPotCallback & a_Callback)
+bool cWorld::DoWithFlowerPotAt(int a_BlockX, int a_BlockY, int a_BlockZ, cFlowerPotCallback a_Callback)
 {
 	return m_ChunkMap->DoWithFlowerPotAt(a_BlockX, a_BlockY, a_BlockZ, a_Callback);
 }
@@ -1585,7 +1588,7 @@ bool cWorld::GetSignLines(int a_BlockX, int a_BlockY, int a_BlockZ, AString & a_
 
 
 
-bool cWorld::DoWithChunk(int a_ChunkX, int a_ChunkZ, cChunkCallback & a_Callback)
+bool cWorld::DoWithChunk(int a_ChunkX, int a_ChunkZ, cChunkCallback a_Callback)
 {
 	return m_ChunkMap->DoWithChunk(a_ChunkX, a_ChunkZ, a_Callback);
 }
@@ -1594,31 +1597,7 @@ bool cWorld::DoWithChunk(int a_ChunkX, int a_ChunkZ, cChunkCallback & a_Callback
 
 
 
-bool cWorld::DoWithChunk(int a_ChunkX, int a_ChunkZ, std::function<bool(cChunk &)> a_Callback)
-{
-	struct cCallBackWrapper : cChunkCallback
-	{
-		cCallBackWrapper(std::function<bool(cChunk &)> a_InnerCallback) :
-			m_Callback(a_InnerCallback)
-		{
-		}
-
-		virtual bool Item(cChunk * a_Chunk)
-		{
-			return m_Callback(*a_Chunk);
-		}
-
-	private:
-		std::function<bool(cChunk &)> m_Callback;
-	} callback(a_Callback);
-	return m_ChunkMap->DoWithChunk(a_ChunkX, a_ChunkZ, callback);
-}
-
-
-
-
-
-bool cWorld::DoWithChunkAt(Vector3i a_BlockPos, std::function<bool(cChunk &)>  a_Callback)
+bool cWorld::DoWithChunkAt(Vector3i a_BlockPos, cChunkCallback a_Callback)
 {
 	return m_ChunkMap->DoWithChunkAt(a_BlockPos, a_Callback);
 }
@@ -2446,9 +2425,19 @@ void cWorld::BroadcastAttachEntity(const cEntity & a_Entity, const cEntity & a_V
 
 
 
+void cWorld::BroadcastBlockAction(Vector3i a_BlockPos, Byte a_Byte1, Byte a_Byte2, BLOCKTYPE a_BlockType, const cClientHandle * a_Exclude)
+{
+	m_ChunkMap->BroadcastBlockAction(a_BlockPos, static_cast<char>(a_Byte1), static_cast<char>(a_Byte2), a_BlockType, a_Exclude);
+}
+
+
+
+
+
 void cWorld::BroadcastBlockAction(int a_BlockX, int a_BlockY, int a_BlockZ, Byte a_Byte1, Byte a_Byte2, BLOCKTYPE a_BlockType, const cClientHandle * a_Exclude)
 {
-	m_ChunkMap->BroadcastBlockAction(a_BlockX, a_BlockY, a_BlockZ, static_cast<char>(a_Byte1), static_cast<char>(a_Byte2), a_BlockType, a_Exclude);
+	LOG("BroadcastBlockAction with integer position is deprecated, use vector-parametered version instead.");
+	m_ChunkMap->BroadcastBlockAction({a_BlockX, a_BlockY, a_BlockZ}, static_cast<char>(a_Byte1), static_cast<char>(a_Byte2), a_BlockType, a_Exclude);
 }
 
 
@@ -2797,9 +2786,19 @@ void cWorld::BroadcastDisplayObjective(const AString & a_Objective, cScoreboard:
 
 
 
+void cWorld::BroadcastSoundEffect(const AString & a_SoundName, Vector3d a_Position, float a_Volume, float a_Pitch, const cClientHandle * a_Exclude)
+{
+	m_ChunkMap->BroadcastSoundEffect(a_SoundName, a_Position, a_Volume, a_Pitch, a_Exclude);
+}
+
+
+
+
+
 void cWorld::BroadcastSoundEffect(const AString & a_SoundName, double a_X, double a_Y, double a_Z, float a_Volume, float a_Pitch, const cClientHandle * a_Exclude)
 {
-	m_ChunkMap->BroadcastSoundEffect(a_SoundName, a_X, a_Y, a_Z, a_Volume, a_Pitch, a_Exclude);
+	LOG("BroadcastSoundEffect with double position arguments is deprecated, use vector-parametered version instead.");
+	BroadcastSoundEffect(a_SoundName, {a_X, a_Y, a_Z}, a_Volume, a_Pitch, a_Exclude);
 }
 
 
@@ -2842,9 +2841,9 @@ void cWorld::BroadcastTeleportEntity(const cEntity & a_Entity, const cClientHand
 
 
 
-void cWorld::BroadcastThunderbolt(int a_BlockX, int a_BlockY, int a_BlockZ, const cClientHandle * a_Exclude)
+void cWorld::BroadcastThunderbolt(Vector3i a_BlockPos, const cClientHandle * a_Exclude)
 {
-	m_ChunkMap->BroadcastThunderbolt(a_BlockX, a_BlockY, a_BlockZ, a_Exclude);
+	m_ChunkMap->BroadcastThunderbolt(a_BlockPos, a_Exclude);
 }
 
 
@@ -3194,18 +3193,13 @@ bool cWorld::IsPlayerReferencedInWorldOrChunk(cPlayer & a_Player)
 
 
 
-bool cWorld::ForEachPlayer(cPlayerListCallback & a_Callback)
+bool cWorld::ForEachPlayer(cPlayerListCallback a_Callback)
 {
 	// Calls the callback for each player in the list
 	cCSLock Lock(m_CSPlayers);
-	for (cPlayerList::iterator itr = m_Players.begin(), itr2 = itr; itr != m_Players.end(); itr = itr2)
+	for (auto & Player : m_Players)
 	{
-		++itr2;
-		if (!(*itr)->IsTicking())
-		{
-			continue;
-		}
-		if (a_Callback.Item(*itr))
+		if (Player->IsTicking() && a_Callback(*Player))
 		{
 			return false;
 		}
@@ -3217,19 +3211,15 @@ bool cWorld::ForEachPlayer(cPlayerListCallback & a_Callback)
 
 
 
-bool cWorld::DoWithPlayer(const AString & a_PlayerName, cPlayerListCallback & a_Callback)
+bool cWorld::DoWithPlayer(const AString & a_PlayerName, cPlayerListCallback a_Callback)
 {
 	// Calls the callback for the specified player in the list
 	cCSLock Lock(m_CSPlayers);
-	for (cPlayerList::iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
+	for (auto & Player : m_Players)
 	{
-		if (!(*itr)->IsTicking())
+		if (Player->IsTicking() && (NoCaseCompare(Player->GetName(), a_PlayerName) == 0))
 		{
-			continue;
-		}
-		if (NoCaseCompare((*itr)->GetName(), a_PlayerName) == 0)
-		{
-			a_Callback.Item(*itr);
+			a_Callback(*Player);
 			return true;
 		}
 	}  // for itr - m_Players[]
@@ -3240,7 +3230,7 @@ bool cWorld::DoWithPlayer(const AString & a_PlayerName, cPlayerListCallback & a_
 
 
 
-bool cWorld::FindAndDoWithPlayer(const AString & a_PlayerNameHint, cPlayerListCallback & a_Callback)
+bool cWorld::FindAndDoWithPlayer(const AString & a_PlayerNameHint, cPlayerListCallback a_Callback)
 {
 	cPlayer * BestMatch = nullptr;
 	size_t BestRating = 0;
@@ -3267,7 +3257,7 @@ bool cWorld::FindAndDoWithPlayer(const AString & a_PlayerNameHint, cPlayerListCa
 
 	if (BestMatch != nullptr)
 	{
-		return a_Callback.Item (BestMatch);
+		return a_Callback(*BestMatch);
 	}
 	return false;
 }
@@ -3276,27 +3266,14 @@ bool cWorld::FindAndDoWithPlayer(const AString & a_PlayerNameHint, cPlayerListCa
 
 
 
-bool cWorld::DoWithPlayerByUUID(const cUUID & a_PlayerUUID, cPlayerListCallback & a_Callback)
-{
-	return DoWithPlayerByUUID(a_PlayerUUID, std::bind(&cPlayerListCallback::Item, &a_Callback, std::placeholders::_1));
-}
-
-
-
-
-
-bool cWorld::DoWithPlayerByUUID(const cUUID & a_PlayerUUID, cLambdaPlayerCallback a_Callback)
+bool cWorld::DoWithPlayerByUUID(const cUUID & a_PlayerUUID, cPlayerListCallback a_Callback)
 {
 	cCSLock Lock(m_CSPlayers);
-	for (cPlayerList::iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
+	for (auto & Player : m_Players)
 	{
-		if (!(*itr)->IsTicking())
+		if (Player->IsTicking() && (Player->GetUUID() == a_PlayerUUID))
 		{
-			continue;
-		}
-		if ((*itr)->GetUUID() == a_PlayerUUID)
-		{
-			return a_Callback(*itr);
+			return a_Callback(*Player);
 		}
 	}
 	return false;
@@ -3364,7 +3341,7 @@ void cWorld::SendPlayerList(cPlayer * a_DestPlayer)
 
 
 
-bool cWorld::ForEachEntity(cEntityCallback & a_Callback)
+bool cWorld::ForEachEntity(cEntityCallback a_Callback)
 {
 	return m_ChunkMap->ForEachEntity(a_Callback);
 }
@@ -3373,7 +3350,7 @@ bool cWorld::ForEachEntity(cEntityCallback & a_Callback)
 
 
 
-bool cWorld::ForEachEntityInChunk(int a_ChunkX, int a_ChunkZ, cEntityCallback & a_Callback)
+bool cWorld::ForEachEntityInChunk(int a_ChunkX, int a_ChunkZ, cEntityCallback a_Callback)
 {
 	return m_ChunkMap->ForEachEntityInChunk(a_ChunkX, a_ChunkZ, a_Callback);
 }
@@ -3382,7 +3359,7 @@ bool cWorld::ForEachEntityInChunk(int a_ChunkX, int a_ChunkZ, cEntityCallback & 
 
 
 
-bool cWorld::ForEachEntityInBox(const cBoundingBox & a_Box, cEntityCallback & a_Callback)
+bool cWorld::ForEachEntityInBox(const cBoundingBox & a_Box, cEntityCallback a_Callback)
 {
 	return m_ChunkMap->ForEachEntityInBox(a_Box, a_Callback);
 }
@@ -3391,16 +3368,7 @@ bool cWorld::ForEachEntityInBox(const cBoundingBox & a_Box, cEntityCallback & a_
 
 
 
-bool cWorld::DoWithEntityByID(UInt32 a_UniqueID, cEntityCallback & a_Callback)
-{
-	return DoWithEntityByID(a_UniqueID, std::bind(&cEntityCallback::Item, &a_Callback, std::placeholders::_1));
-}
-
-
-
-
-
-bool cWorld::DoWithEntityByID(UInt32 a_UniqueID, cLambdaEntityCallback a_Callback)
+bool cWorld::DoWithEntityByID(UInt32 a_UniqueID, cEntityCallback a_Callback)
 {
 	// First check the entities-to-add:
 	{
@@ -3409,7 +3377,7 @@ bool cWorld::DoWithEntityByID(UInt32 a_UniqueID, cLambdaEntityCallback a_Callbac
 		{
 			if (ent->GetUniqueID() == a_UniqueID)
 			{
-				a_Callback(ent.get());
+				a_Callback(*ent);
 				return true;
 			}
 		}  // for ent - m_EntitiesToAdd[]
@@ -3541,20 +3509,12 @@ bool cWorld::SetSignLines(int a_BlockX, int a_BlockY, int a_BlockZ, const AStrin
 
 bool cWorld::SetCommandBlockCommand(int a_BlockX, int a_BlockY, int a_BlockZ, const AString & a_Command)
 {
-	class cUpdateCommandBlock : public cCommandBlockCallback
-	{
-		AString m_Command;
-	public:
-		cUpdateCommandBlock(const AString & a_CallbackCommand) : m_Command(a_CallbackCommand) {}
-
-		virtual bool Item(cCommandBlockEntity * a_CommandBlock) override
+	return DoWithCommandBlockAt(a_BlockX, a_BlockY, a_BlockZ, [&](cCommandBlockEntity & a_CommandBlock)
 		{
-			a_CommandBlock->SetCommand(m_Command);
+			a_CommandBlock.SetCommand(a_Command);
 			return false;
 		}
-	} CmdBlockCB (a_Command);
-
-	return DoWithCommandBlockAt(a_BlockX, a_BlockY, a_BlockZ, CmdBlockCB);
+	);
 }
 
 
@@ -3649,7 +3609,7 @@ bool cWorld::ForEachChunkInRect(int a_MinChunkX, int a_MaxChunkX, int a_MinChunk
 
 
 
-bool cWorld::ForEachLoadedChunk(std::function<bool(int, int)> a_Callback)
+bool cWorld::ForEachLoadedChunk(cFunctionRef<bool(int, int)> a_Callback)
 {
 	return m_ChunkMap->ForEachLoadedChunk(a_Callback);
 }
