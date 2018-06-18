@@ -118,7 +118,7 @@ UInt32 cProtocol_1_12::GetPacketId(eOutgoingPackets a_Packet)
 		case sendEntityHeadLook:      return 0x35;
 		case sendEntityLook:          return 0x28;
 		case sendEntityMeta:          return 0x3b;
-		case sendEntityProperties:    return 0x4d;
+		case sendEntityProperties:    return 0x4e;
 		case sendEntityRelMove:       return 0x26;
 		case sendEntityRelMoveLook:   return 0x27;
 		case sendEntityVelocity:      return 0x3d;

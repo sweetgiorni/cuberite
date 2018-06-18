@@ -99,6 +99,7 @@ void cMonsterConfig::AssignAttributes(cMonster * a_Monster, const AString & a_Na
 			return;
 		}
 	}  // for itr - m_pState->AttributesList[]
+
 }
 
 

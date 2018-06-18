@@ -2598,7 +2598,7 @@ void cProtocol_1_8_0::HandlePacketSteerVehicle(cByteBuffer & a_ByteBuffer)
 	}
 	else if ((Flags & 0x1) != 0)
 	{
-		// jump
+		// Jump
 	}
 	else
 	{
@@ -3483,21 +3483,21 @@ void cProtocol_1_8_0::WriteMobMetadata(cPacketizer & a_Pkt, const cMonster & a_M
 			{
 				Flags |= 0x04;
 			}
-			if (Horse.IsChested())
+			/*if (Horse.IsChested())
 			{
-				Flags |= 0x08;
-			}
+			Flags |= 0x08;
+			}*/
 			if (Horse.IsEating())
 			{
-				Flags |= 0x20;
+				Flags |= 0x10;
 			}
 			if (Horse.IsRearing())
 			{
-				Flags |= 0x40;
+				//Flags |= 0x20;
 			}
 			if (Horse.IsMthOpen())
 			{
-				Flags |= 0x80;
+				Flags |= 0x40;
 			}
 			a_Pkt.WriteBEUInt8(0x50);  // Int at index 16
 			a_Pkt.WriteBEInt32(Flags);

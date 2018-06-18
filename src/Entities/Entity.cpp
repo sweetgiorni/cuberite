@@ -1124,7 +1124,7 @@ void cEntity::HandlePhysics(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 			}
 		}
 		else
-		{
+	{	
 			// We didn't hit anything, so move:
 			NextPos += (NextSpeed * DtSec.count());
 		}
@@ -2074,7 +2074,7 @@ void cEntity::SetRoll(double a_Roll)
 
 
 void cEntity::SetSpeed(double a_SpeedX, double a_SpeedY, double a_SpeedZ)
-{
+{	
 	DoSetSpeed(a_SpeedX, a_SpeedY, a_SpeedZ);
 }
 
@@ -2153,12 +2153,39 @@ void cEntity::AddSpeedZ(double a_AddSpeedZ)
 void cEntity::HandleSpeedFromAttachee(float a_Forward, float a_Sideways)
 {
 	Vector3d LookVector = m_Attachee->GetLookVector();
-	double AddSpeedX = LookVector.x * a_Forward + LookVector.z * a_Sideways;
-	double AddSpeedZ = LookVector.z * a_Forward - LookVector.x * a_Sideways;
-	SetSpeed(AddSpeedX, 0, AddSpeedZ);
+	LookVector.y = 0;
+	LookVector.Normalize();
+	double SpeedX = LookVector.x * a_Forward + LookVector.z * a_Sideways;
+	double SpeedZ = LookVector.z * a_Forward - LookVector.x * a_Sideways;
+
+	SetSpeedX(SpeedX);
+	SetSpeedZ(SpeedZ);
+
 	BroadcastMovementUpdate();
 }
 
+
+
+void cEntity::HandleJumpFromAttachee(float a_JumpPower)
+{
+	this->SetSpeedY(a_JumpPower);
+	BroadcastMovementUpdate();
+}
+
+
+
+
+void cEntity::VehicleJump(int a_JumpPower)
+{
+	if (m_AttachedTo == nullptr)
+	{
+		return;
+	}
+	if (a_JumpPower > 0)
+	{
+		m_AttachedTo->HandleJumpFromAttachee(a_JumpPower);
+	}
+}
 
 
 
@@ -2169,12 +2196,12 @@ void cEntity::SteerVehicle(float a_Forward, float a_Sideways)
 	{
 		return;
 	}
+	
 	if ((a_Forward != 0.0f) || (a_Sideways != 0.0f))
 	{
 		m_AttachedTo->HandleSpeedFromAttachee(a_Forward, a_Sideways);
 	}
 }
-
 
 
 

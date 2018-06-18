@@ -918,21 +918,21 @@ void cProtocol_1_11_0::WriteMobMetadata(cPacketizer & a_Pkt, const cMonster & a_
 			{
 				Flags |= 0x04;
 			}
-			if (Horse.IsChested())
+			/*if (Horse.IsChested())
 			{
-				Flags |= 0x08;
-			}
+			Flags |= 0x08;
+			}*/
 			if (Horse.IsEating())
 			{
-				Flags |= 0x20;
+				Flags |= 0x10;
 			}
 			if (Horse.IsRearing())
 			{
-				Flags |= 0x40;
+				//Flags |= 0x20;
 			}
 			if (Horse.IsMthOpen())
 			{
-				Flags |= 0x80;
+				Flags |= 0x40;
 			}
 			a_Pkt.WriteBEUInt8(ABSTRACT_HORSE_STATUS);
 			a_Pkt.WriteBEUInt8(METADATA_TYPE_BYTE);

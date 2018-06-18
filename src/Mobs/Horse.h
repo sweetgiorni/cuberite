@@ -15,7 +15,7 @@ class cHorse :
 	typedef cPassiveMonster super;
 
 public:
-	cHorse(int Type, int Color, int Style, int TameTimes);
+	cHorse(int Type, int Color, int Style);
 	virtual ~cHorse() override;
 
 	CLASS_PROTODEF(cHorse)
@@ -23,20 +23,26 @@ public:
 	virtual void GetDrops(cItems & a_Drops, cEntity * a_Killer = nullptr) override;
 	virtual void InStateIdle(std::chrono::milliseconds a_Dt, cChunk & a_Chunk) override;
 	virtual void HandleSpeedFromAttachee(float a_Forward, float a_Sideways) override;
+	virtual void HandleJumpFromAttachee(float a_JumpPower) override;
 	virtual void Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk) override;
 	virtual void OnRightClicked(cPlayer & a_Player) override;
 
-	bool IsSaddled      (void) const  {return !m_Saddle.IsEmpty(); }
-	bool IsChested      (void) const  {return m_bHasChest; }
-	bool IsEating       (void) const  {return m_bIsEating; }
-	bool IsRearing      (void) const  {return m_bIsRearing; }
-	bool IsMthOpen      (void) const  {return m_bIsMouthOpen; }
-	bool IsTame         (void) const override {return m_bIsTame; }
-	int  GetHorseType   (void) const  {return m_Type; }
-	int  GetHorseColor  (void) const  {return m_Color; }
-	int  GetHorseStyle  (void) const  {return m_Style; }
-	int  GetHorseArmour (void) const;
+	virtual void HandlePhysics(std::chrono::milliseconds a_Dt, cChunk & a_Chunk) override;
+	virtual void HandleFalling(void) override { };
 
+	bool IsSaddled        (void) const  {return !m_Saddle.IsEmpty(); }
+	bool IsChested        (void) const  {return m_bHasChest; }
+	bool IsEating         (void) const  {return m_bIsEating; }
+	bool IsRearing        (void) const  {return m_bIsRearing; }
+	bool IsMthOpen        (void) const  {return m_bIsMouthOpen; }
+	bool IsTame           (void) const override {return m_bIsTame; }
+	bool IsMounted        (void) const  {return m_Attachee != nullptr; }
+	int  GetHorseType     (void) const  {return m_Type; }
+	int  GetHorseColor    (void) const  {return m_Color; }
+	int  GetHorseStyle    (void) const  {return m_Style; }
+	int  GetHorseArmour   (void) const;
+	double GetMaxSpeed     (void) const  {return m_MaxSpeed; }
+	double GetJumpStrength (void) const  { return m_JumpStrength; }
 	/** Set the horse's saddle to the given item.
 	@param a_SaddleItem should be either a saddle or empty. */
 	void SetHorseSaddle(cItem a_SaddleItem);
@@ -58,9 +64,11 @@ public:
 
 private:
 
-	bool m_bHasChest, m_bIsEating, m_bIsRearing, m_bIsMouthOpen, m_bIsTame;
-	int m_Type, m_Color, m_Style, m_TimesToTame, m_TameAttemptTimes, m_RearTickCount;
-	float m_MaxSpeed;
+	bool m_bHasChest, m_bIsEating, m_bIsRearing, m_bIsMouthOpen, m_bIsTame, m_bIsJumping, m_StartJump;
+	int m_Type, m_Color, m_Style, m_Temper, m_RearTickCount, m_TameAttempt;
+	double m_MaxSpeed, m_JumpHeight, m_JumpStrength;
+
+	int jumpTimer = 0;
 	cItem m_Saddle;
 	cItem m_Armor;
 

@@ -512,6 +512,7 @@ void cProtocol_1_9_0::SendEntityProperties(const cEntity & a_Entity)
 	cPacketizer Pkt(*this, GetPacketId(sendEntityProperties));  // Entity Properties packet
 	Pkt.WriteVarInt32(a_Entity.GetUniqueID());
 	WriteEntityProperties(Pkt, a_Entity);
+	//Pkt.WriteBEUInt8(0xff);  // The termination byte
 }
 
 
@@ -2520,6 +2521,8 @@ void cProtocol_1_9_0::HandlePacketEntityAction(cByteBuffer & a_ByteBuffer)
 		case 2: m_Client->HandleEntityLeaveBed(PlayerID);         break;  // Leave Bed
 		case 3: m_Client->HandleEntitySprinting(PlayerID, true);  break;  // Start sprinting
 		case 4: m_Client->HandleEntitySprinting(PlayerID, false); break;  // Stop sprinting
+		case 5: m_Client->HandleVehicleJump(PlayerID, JumpBoost); break;  // Horse start jump
+		case 6:  LOG("HORSE LOG JUMP"); break;                                                         // Horse stop jump -- this never seems to fire?
 		case 7: m_Client->HandleOpenHorseInventory(PlayerID);     break;  // Open horse inventory
 	}
 }
@@ -2685,10 +2688,6 @@ void cProtocol_1_9_0::HandlePacketSteerVehicle(cByteBuffer & a_ByteBuffer)
 	if ((Flags & 0x2) != 0)
 	{
 		m_Client->HandleUnmount();
-	}
-	else if ((Flags & 0x1) != 0)
-	{
-		// TODO: Handle vehicle jump (for animals)
 	}
 	else
 	{
@@ -3932,21 +3931,21 @@ void cProtocol_1_9_0::WriteMobMetadata(cPacketizer & a_Pkt, const cMonster & a_M
 			{
 				Flags |= 0x04;
 			}
-			if (Horse.IsChested())
+			/*if (Horse.IsChested())
 			{
 				Flags |= 0x08;
-			}
+			}*/
 			if (Horse.IsEating())
 			{
-				Flags |= 0x20;
+				Flags |= 0x10;
 			}
 			if (Horse.IsRearing())
 			{
-				Flags |= 0x40;
+				Flags |= 0x20;
 			}
 			if (Horse.IsMthOpen())
 			{
-				Flags |= 0x80;
+				Flags |= 0x40;
 			}
 			a_Pkt.WriteBEUInt8(12);  // Index 12: flags
 			a_Pkt.WriteBEUInt8(METADATA_TYPE_BYTE);
@@ -4172,11 +4171,67 @@ void cProtocol_1_9_0::WriteEntityProperties(cPacketizer & a_Pkt, const cEntity &
 		return;
 	}
 
-	// const cMonster & Mob = (const cMonster &)a_Entity;
+	const cMonster & Mob = (const cMonster &)a_Entity;
 
-	// TODO: Send properties and modifiers based on the mob type
+	int ArrayLength = 8; //Always send the 7 generic properties, plus one more special property if the mob is a zombie or a horse
+	/*if (Mob.GetMobType() == mtHorse || Mob.GetMobType() == mtZombie)
+	{
+		ArrayLength++;
+	}*/
+	a_Pkt.WriteBEInt32(ArrayLength);  // Number of proprties in array
 
-	a_Pkt.WriteBEInt32(0);  // NumProperties
+	a_Pkt.WriteString("generic.maxHealth");
+	a_Pkt.WriteBEDouble(a_Entity.GetMaxHealth());
+	a_Pkt.WriteVarInt32(0);  // NumModifiers
+
+	a_Pkt.WriteString("generic.followRange");
+	a_Pkt.WriteBEDouble(32.0);
+	a_Pkt.WriteVarInt32(0);  // NumModifiers
+
+	a_Pkt.WriteString("generic.knockbackResistance");
+	a_Pkt.WriteBEDouble(0.0);
+	a_Pkt.WriteVarInt32(0);  // NumModifiers
+
+	a_Pkt.WriteString("generic.movementSpeed");
+	if (Mob.GetMobType() == mtHorse)
+	{
+		auto & Horse = reinterpret_cast<const cHorse &>(Mob);
+		a_Pkt.WriteBEDouble(Horse.GetMaxSpeed());
+	}
+	else
+	{
+		a_Pkt.WriteBEDouble(0.699999988079071);
+	}
+	a_Pkt.WriteVarInt32(0);  // NumModifiers
+
+	a_Pkt.WriteString("generic.attackDamage");
+	a_Pkt.WriteBEDouble(Mob.GetAttackDamage());
+	a_Pkt.WriteVarInt32(0);  // NumModifiers
+
+	a_Pkt.WriteString("generic.attackSpeed");
+	a_Pkt.WriteBEDouble(Mob.GetAttackRate());
+	a_Pkt.WriteVarInt32(0);  // NumModifiers
+
+	a_Pkt.WriteString("generic.flyingSpeed");
+	a_Pkt.WriteBEDouble(0.4000000059604645);
+	a_Pkt.WriteVarInt32(0);  // NumModifiers
+
+	
+	//if (Mob.GetMobType() == mtHorse)
+	//{
+		a_Pkt.WriteString("horse.jumpStrength");
+		auto & Horse = reinterpret_cast<const cHorse &>(Mob);
+		a_Pkt.WriteBEDouble(Horse.GetJumpStrength());
+		a_Pkt.WriteVarInt32(0);  // NumModifiers
+	//}
+	/*
+	if (Mob.GetMobType() == mtZombie)
+	{
+		a_Pkt.WriteString("zombie.spawnReinforcements");
+		auto & Zombie = reinterpret_cast<const cZombie &>(Mob);
+		a_Pkt.WriteBEDouble(0.0);
+		a_Pkt.WriteVarInt32(0);  // NumModifiers
+	}*/
 }
 
 

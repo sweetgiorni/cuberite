@@ -254,7 +254,10 @@ public:
 	void AddSpeedZ  (double a_AddSpeedZ);
 
 	virtual void HandleSpeedFromAttachee(float a_Forward, float a_Sideways);
+	virtual void HandleJumpFromAttachee(float a_JumpPower);
+	void VehicleJump(int a_JumpBoost);
 	void SteerVehicle(float a_Forward, float a_Sideways);
+	
 
 	inline UInt32 GetUniqueID(void) const { return m_UniqueID; }
 

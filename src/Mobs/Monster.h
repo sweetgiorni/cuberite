@@ -116,9 +116,10 @@ public:
 	virtual void InStateChasing (std::chrono::milliseconds a_Dt, cChunk & a_Chunk);
 	virtual void InStateEscaping(std::chrono::milliseconds a_Dt, cChunk & a_Chunk);
 
-	int GetAttackRate() { return static_cast<int>(m_AttackRate); }
+	int GetAttackRate() const { return static_cast<int>(m_AttackRate); }
 	void SetAttackRate(float a_AttackRate) { m_AttackRate = a_AttackRate; }
 	void SetAttackRange(int a_AttackRange) { m_AttackRange = a_AttackRange; }
+	int GetAttackDamage() const { return m_AttackDamage; }
 	void SetAttackDamage(int a_AttackDamage) { m_AttackDamage = a_AttackDamage; }
 	void SetSightDistance(int a_SightDistance) { m_SightDistance = a_SightDistance; }
 

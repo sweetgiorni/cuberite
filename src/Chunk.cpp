@@ -2867,6 +2867,22 @@ void cChunk::BroadcastEntityMetadata(const cEntity & a_Entity, const cClientHand
 
 
 
+void cChunk::BroadcastEntityProperties(const cEntity & a_Entity, const cClientHandle * a_Exclude)
+{
+	for (auto itr = m_LoadedByClient.begin(); itr != m_LoadedByClient.end(); ++itr)
+	{
+		if (*itr == a_Exclude)
+		{
+			continue;
+		}
+		(*itr)->SendEntityProperties(a_Entity);
+	}  // for itr - LoadedByClient[]
+}
+
+
+
+
+
 void cChunk::BroadcastEntityRelMove(const cEntity & a_Entity, char a_RelX, char a_RelY, char a_RelZ, const cClientHandle * a_Exclude)
 {
 	for (auto itr = m_LoadedByClient.begin(); itr != m_LoadedByClient.end(); ++itr)

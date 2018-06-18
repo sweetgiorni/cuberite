@@ -425,7 +425,7 @@ void cPawn::HandleFalling(void)
 		auto Damage = static_cast<int>(m_LastGroundHeight - GetPosY() - 3.0);
 		if ((Damage > 0) && !FallDamageAbsorbed)
 		{
-			TakeDamage(dtFalling, nullptr, Damage, Damage, 0);
+			//TakeDamage(dtFalling, nullptr, Damage, Damage, 0);
 
 			// Fall particles
 			// TODO: Re-enable this when effects in 1.9 aren't broken (right now this uses the wrong effect ID in 1.9 and the right one in 1.8)

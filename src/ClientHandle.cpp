@@ -845,8 +845,8 @@ void cClientHandle::HandlePlayerPos(double a_PosX, double a_PosY, double a_PosZ,
 	if ((OldPosition - NewPosition).SqrLength() > 100 * 100)
 	{
 		LOGD("Too far away (%0.2f), \"repairing\" the client", (OldPosition - NewPosition).Length());
-		SendPlayerMoveLook();
-		return;
+		//SendPlayerMoveLook();
+		//return;
 	}
 
 	if (cRoot::Get()->GetPluginManager()->CallHookPlayerMoving(*m_Player, OldPosition, NewPosition))
@@ -858,7 +858,7 @@ void cClientHandle::HandlePlayerPos(double a_PosX, double a_PosY, double a_PosZ,
 	// TODO: should do some checks to see if player is not moving through terrain
 	// TODO: Official server refuses position packets too far away from each other, kicking "hacked" clients; we should, too
 
-	m_Player->SetPosition(NewPosition);
+	//m_Player->SetPosition(NewPosition);
 	m_Player->SetStance(a_Stance);
 	m_Player->SetTouchGround(a_IsOnGround);
 	m_Player->UpdateMovementStats(NewPosition - OldPosition, PreviousIsOnGround);
@@ -1612,6 +1612,16 @@ void cClientHandle::HandleSteerVehicle(float a_Forward, float a_Sideways)
 {
 	m_Player->SteerVehicle(a_Forward, a_Sideways);
 }
+
+
+
+
+ 
+void cClientHandle::HandleVehicleJump(UInt32 a_EntityID, UInt32 a_Jumpboost)
+{
+	m_Player->VehicleJump(a_Jumpboost);
+}
+	
 
 
 
@@ -2553,6 +2563,14 @@ void cClientHandle::SendEntityLook(const cEntity & a_Entity)
 void cClientHandle::SendEntityMetadata(const cEntity & a_Entity)
 {
 	m_Protocol->SendEntityMetadata(a_Entity);
+}
+
+
+
+
+void cClientHandle::SendEntityProperties(const cEntity & a_Entity)
+{
+	m_Protocol->SendEntityProperties(a_Entity);
 }
 
 

@@ -467,7 +467,7 @@ void cMonster::CalcLeashActions(std::chrono::milliseconds a_Dt)
 
 
 
-void cMonster::SetPitchAndYawFromDestination(bool a_IsFollowingPath)
+void cMonster::SetPitchAndYawFromDestination(bool a_IsFollowingPath) // <------- baddie
 {
 	Vector3d BodyDistance;
 	if (!a_IsFollowingPath && (GetTarget() != nullptr))
@@ -507,7 +507,11 @@ void cMonster::SetPitchAndYawFromDestination(bool a_IsFollowingPath)
 	VectorToEuler(HeadDistance.x, HeadDistance.y, HeadDistance.z, HeadRotation, HeadPitch);
 	if ((std::abs(BodyRotation - HeadRotation) < 70) && (std::abs(HeadPitch) < 60))
 	{
-		SetHeadYaw(HeadRotation);
+		if (this->m_Attachee == nullptr)
+		{
+			SetHeadYaw(HeadRotation);
+		}
+		
 		SetPitch(-HeadPitch);
 	}
 	else
@@ -1166,7 +1170,6 @@ std::unique_ptr<cMonster> cMonster::NewMonsterFromType(eMonsterType a_MobType)
 			int HorseType = Random.RandInt(7);
 			int HorseColor = Random.RandInt(6);
 			int HorseStyle = Random.RandInt(4);
-			int HorseTameTimes = Random.RandInt(1, 6);
 
 			if ((HorseType == 5) || (HorseType == 6) || (HorseType == 7))
 			{
@@ -1174,7 +1177,7 @@ std::unique_ptr<cMonster> cMonster::NewMonsterFromType(eMonsterType a_MobType)
 				HorseType = 0;
 			}
 
-			return cpp14::make_unique<cHorse>(HorseType, HorseColor, HorseStyle, HorseTameTimes);
+			return cpp14::make_unique<cHorse>(HorseType, HorseColor, HorseStyle);
 		}
 
 		case mtBat:           return cpp14::make_unique<cBat>();

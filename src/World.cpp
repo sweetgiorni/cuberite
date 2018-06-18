@@ -2593,6 +2593,14 @@ void cWorld::BroadcastEntityMetadata(const cEntity & a_Entity, const cClientHand
 
 
 
+void cWorld::BroadcastEntityProperties(const cEntity & a_Entity, const cClientHandle * a_Exclude)
+{
+	m_ChunkMap->BroadcastEntityProperties(a_Entity, a_Exclude);
+}
+
+
+
+
 
 void cWorld::BroadcastEntityRelMove(const cEntity & a_Entity, char a_RelX, char a_RelY, char a_RelZ, const cClientHandle * a_Exclude)
 {

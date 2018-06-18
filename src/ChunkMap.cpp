@@ -486,6 +486,21 @@ void cChunkMap::BroadcastEntityMetadata(const cEntity & a_Entity, const cClientH
 
 
 
+void cChunkMap::BroadcastEntityProperties(const cEntity & a_Entity, const cClientHandle * a_Exclude)
+{
+	cCSLock Lock(m_CSChunks);
+	cChunkPtr Chunk = GetChunkNoGen(a_Entity.GetChunkX(), a_Entity.GetChunkZ());
+	if (Chunk == nullptr)
+	{
+		return;
+	}
+	// It's perfectly legal to broadcast packets even to invalid chunks!
+	Chunk->BroadcastEntityProperties(a_Entity, a_Exclude);
+}
+
+
+
+
 
 void cChunkMap::BroadcastEntityRelMove(const cEntity & a_Entity, char a_RelX, char a_RelY, char a_RelZ, const cClientHandle * a_Exclude)
 {

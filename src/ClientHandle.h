@@ -360,6 +360,7 @@ public:  // tolua_export
 	void HandleSlotSelected     (Int16 a_SlotNum);
 	void HandleSpectate         (const cUUID & a_PlayerUUID);
 	void HandleSteerVehicle     (float Forward, float Sideways);
+	void HandleVehicleJump      (UInt32 a_EntityID, UInt32 a_JumpBoost);
 	void HandleTabCompletion    (const AString & a_Text);
 	void HandleUpdateSign       (
 		int a_BlockX, int a_BlockY, int a_BlockZ,

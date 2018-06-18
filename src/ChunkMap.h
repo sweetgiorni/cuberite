@@ -82,6 +82,7 @@ public:
 	void BroadcastEntityHeadLook(const cEntity & a_Entity, const cClientHandle * a_Exclude = nullptr);
 	void BroadcastEntityLook(const cEntity & a_Entity, const cClientHandle * a_Exclude = nullptr);
 	void BroadcastEntityMetadata(const cEntity & a_Entity, const cClientHandle * a_Exclude = nullptr);
+	void BroadcastEntityProperties(const cEntity & a_Entity, const cClientHandle * a_Exclude = nullptr);
 	void BroadcastEntityRelMove(const cEntity & a_Entity, char a_RelX, char a_RelY, char a_RelZ, const cClientHandle * a_Exclude = nullptr);
 	void BroadcastEntityRelMoveLook(const cEntity & a_Entity, char a_RelX, char a_RelY, char a_RelZ, const cClientHandle * a_Exclude = nullptr);
 	void BroadcastEntityStatus(const cEntity & a_Entity, char a_Status, const cClientHandle * a_Exclude = nullptr);
